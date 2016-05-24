@@ -5,31 +5,51 @@ import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ChessServer {
 	private static int PORT = 5002;
 	public static final int rows = 8;
 	public static final int columns = 8;
 	public AbstractLogger logger;
+	public List<Game> games;
+	public JDBCconnection jdbc;
 
-	public void createServer() throws IOException {
+	public void createServer() throws IOException, ClassNotFoundException, SQLException {
 		logger = Logger.getChainOfLoggers();
 		logger.logMessage(AbstractLogger.INFO, "Chess Server is Running");
 		ServerSocket listener = new ServerSocket(PORT);
+		games = new ArrayList<Game>();
+		jdbc = new JDBCconnection();
 		// listener.setSoTimeout(10000);
 		try {
 			while (true) {
 				Game game = new Game();
 				Game.Player player1, player2;
 				player1 = game.new Player(listener.accept(), 1);
+				while (player1.waitConnection() == 0) {
+				}
+
 				player2 = game.new Player(listener.accept(), -1);
+				while (player2.waitConnection() == 0) {
+				}
+
 				player1.setOpponent(player2);
 				player2.setOpponent(player1);
 				game.currentPlayer = player1;
+				games.add(game);
 				player1.start();
 				player2.start();
 			}
+		} catch (Exception e) {
+			logger.logMessage(AbstractLogger.ERROR, e.getMessage());
 		} finally {
+			for (Game game : games) {
+				game.currentPlayer.output.writeObject("PICAT SERVERUL A PICAT");
+				game.currentPlayer.opponent.output.writeObject("PICAT SERVERUL A PICAT");
+			}
 			listener.close();
 			logger.close();
 		}
@@ -41,23 +61,24 @@ public class ChessServer {
 
 	class Game {
 		public int selected = 0; // exista piesa selectata
-		public int piespoz[][]; // 1 pentru piesa alba -1 pt piesa neagra
+		public int piecePoz[][]; // 1 pentru piesa alba -1 pt piesa neagra
 		public int check1[][] = new int[rows][columns];
 		public int legalMoves[][];
 		public Player currentPlayer;
 		public String matrix[][];
-		public int piesaselectatax, piesaselectatay;
-		
+		public int selectedX, selectedY;
+
 		public Game() throws FileNotFoundException, UnsupportedEncodingException {
 			init();
 		}
+
 		public void init() throws FileNotFoundException, UnsupportedEncodingException {
-			piesaselectatax = piesaselectatay = 0;
+			selectedX = selectedY = 0;
 			legalMoves = new int[rows][columns];
-			piespoz = new int[rows][columns];
+			piecePoz = new int[rows][columns];
 			for (int i = 0; i < columns; i++) {
-				piespoz[0][i] = piespoz[1][i] = 1;
-				piespoz[6][i] = piespoz[7][i] = -1;
+				piecePoz[0][i] = piecePoz[1][i] = 1;
+				piecePoz[6][i] = piecePoz[7][i] = -1;
 			}
 			matrix = new String[][] { { "wtura", "wcal", "wnebun", "wrege", "wregina", "wnebun", "wcal", "wtura" },
 					{ "wpion", "wpion", "wpion", "wpion", "wpion", "wpion", "wpion", "wpion" },
@@ -67,7 +88,7 @@ public class ChessServer {
 					{ "btura", "bcal", "bnebun", "brege", "bregina", "bnebun", "bcal", "btura" } };
 		}
 
-		public int cauta(String s, String matrix[][]) {
+		public int search(String s, String matrix[][]) {
 			for (int i = 0; i < rows; i++)
 				for (int j = 0; j < columns; j++) {
 					if (matrix[i][j].equals(s))
@@ -76,31 +97,31 @@ public class ChessServer {
 			return 0;
 		}
 
-		public int[][] mutariPosibile(int rand, String[][] matrice, int piespozitii[][]) {
+		public int[][] mutariPosibile(int rand, String[][] matrice, int piecePoz[][]) {
 			int i, j, ii, jj;
-			int tabla[][] = new int[rows][columns];
+			int table[][] = new int[rows][columns];
 			int b[][] = new int[rows][columns];
 			for (i = 0; i < rows; i++) {
 				for (j = 0; j < columns; j++) {
-					if (piespozitii[i][j] == rand) {
-						b = Management.nextmove(matrice[i][j], i, j, rand, piespozitii);
+					if (piecePoz[i][j] == rand) {
+						b = Management.nextmove(matrice[i][j], i, j, rand, piecePoz);
 
 						for (ii = 0; ii < rows; ii++)
 							for (jj = 0; jj < columns; jj++)
-								tabla[ii][jj] = tabla[ii][jj] | b[ii][jj];
+								table[ii][jj] = table[ii][jj] | b[ii][jj];
 					}
 				}
 			}
-			return tabla;
+			return table;
 		}
 
 		public int[][] moves(int rand, String piesa, int x, int y) {
 			int b[][] = new int[rows][columns];
-			b = Management.nextmove(piesa, x, y, rand, piespoz);
+			b = Management.nextmove(piesa, x, y, rand, piecePoz);
 			return b;
 		}
 
-		public void afisareTabla(String[][] matrix) {
+		public void showTable(String[][] matrix) {
 			int r, c;
 			for (r = 0; r < rows; r++) {
 				for (c = 0; c < columns; c++) {
@@ -115,61 +136,78 @@ public class ChessServer {
 			currentPlayer.output.writeObject("MESSAGE Este randul lui " + currentPlayer.nume);
 			currentPlayer.opponent.output.writeObject("MESSAGE Este randul lui " + currentPlayer.nume);
 
-			if (checkSah(matrix, piespoz) && verificaSahMat(currentPlayer.rand) == 1)
+			if (check(matrix, piecePoz, currentPlayer.rand) && verificaSahMat(currentPlayer.rand) == 1) {
 				currentPlayer.output
-						.writeObject("MESSAGE SAH MAT ,Jucatorul " + currentPlayer.opponent.nume + "a castigat");
+						.writeObject("SAHMAT ,Jucatorul " + currentPlayer.opponent.nume + " a castigat");
+				currentPlayer.opponent.output
+						.writeObject("SAHMAT ,Jucatorul " + currentPlayer.opponent.nume + " a castigat");
+			}
 		}
 
-		public int getregepoz(int rand, String matrix[][]) {
-			int i, j, nr = 0;
+		public int getkingPos(int rand, String matrix[][]) {
+			int i, j, poz = 0;
 			char culoare = (rand == 1) ? 'w' : 'b';
 			for (i = 0; i < rows; i++)
 				for (j = 0; j < columns; j++)
 					if (matrix[i][j].substring(1).equals("rege") && matrix[i][j].charAt(0) == culoare)
-						nr = i * 10 + j;
-			return nr;
+						poz = i * 10 + j;
+			return poz;
 		}
 
 		public int verificaSahMat(int rand) {
-			int i, j, ii = 0, jj = 0, pozrege;
+			int i, j, ii = 0, jj = 0, kingPos;
 			String aux;
+			int aux2;
 			int a[][] = new int[rows][columns];
-			String b[][] = new String[rows][columns];
-			int c[][] = new int[rows][columns];
-			pozrege = getregepoz(rand, matrix);
-			logger.logMessage(AbstractLogger.INFO, "pozrege=" + pozrege);
+			String tempPoz[][] = new String[rows][columns];
+			int tempPiecePoz[][] = new int[rows][columns];
+			// int c[][] = new int[rows][columns];
+			kingPos = getkingPos(rand, matrix);
+			logger.logMessage(AbstractLogger.INFO, "kingPos=" + kingPos);
 			for (ii = 0; ii < rows; ii++)
 				for (jj = 0; jj < columns; jj++) {
-					if (piespoz[ii][jj] == rand) {
+					if (piecePoz[ii][jj] == rand) {
 						a = moves(rand, matrix[ii][jj], ii, jj);
 						for (i = 0; i < rows; i++)
 							for (j = 0; j < columns; j++) {
 								if (a[i][j] == 0)
 									continue;
 								for (int l = 0; l < rows; l++)
-									for (int ll = 0; ll < columns; ll++)
-										b[l][ll] = matrix[l][ll];
-								aux = b[ii][jj];
-								b[ii][jj] = b[i][j];
-								b[i][j] = aux;
-								pozrege = getregepoz(rand, b);
-								c = mutariPosibile(rand * (-1), b, piespoz);
-								if (c[pozrege / 10][pozrege % 10] == 0)
+									for (int ll = 0; ll < columns; ll++) {
+										tempPoz[l][ll] = matrix[l][ll];
+										tempPiecePoz[l][ll] = piecePoz[l][ll];
+									}
+								aux = tempPoz[ii][jj];
+								tempPoz[ii][jj] = tempPoz[i][j];
+								tempPoz[i][j] = aux;
+
+								aux2 = tempPiecePoz[ii][jj];
+								tempPiecePoz[ii][jj] = tempPiecePoz[i][j];
+								tempPiecePoz[i][j] = aux2;
+
+								if (check(tempPoz, tempPiecePoz, rand ) == false)
 									return 0;
+
+								/*
+								 * kingPos = getkingPos(rand, tempPoz); c =
+								 * mutariPosibile(rand * (-1), tempPoz,
+								 * piecePoz); if (c[kingPos / 10][kingPos % 10]
+								 * == 0) return 0;
+								 */
 							}
 					}
 				}
 			return 1;
 		}
 
-		public synchronized void sah(int i, int j, String ii, int jj) throws IOException {
+		public synchronized void check() throws IOException {
 			selected = 0;
 			currentPlayer.output.writeObject("SAH");
 
 			logger.logMessage(AbstractLogger.INFO, "MAAAAATRRIX");
 			for (int r = 0; r < rows; r++) {
 				for (int c = 0; c < columns; c++) {
-					logger.print(piespoz[r][c] + " ");
+					logger.print(piecePoz[r][c] + " ");
 				}
 				logger.logMessage(AbstractLogger.INFO, "");
 			}
@@ -177,20 +215,20 @@ public class ChessServer {
 
 		// copiem masa cu numele pieselor
 		public synchronized String[][] copyMatrix(String matrix[][]) {
-			String matrixTemp[][] = new String[8][8];
+			String matrixTemp[][] = new String[rows][columns];
 			for (int i = 0; i < rows; i++)
-				System.arraycopy(matrix[i], 0, matrixTemp[i], 0, 8);
+				System.arraycopy(matrix[i], 0, matrixTemp[i], 0, columns);
 			logger.logMessage(AbstractLogger.INFO, "copyMatrix");
-			afisareTabla(matrixTemp);
+			// showTable(matrixTemp);
 			return matrixTemp;
 		}
 
 		// copiem masa care retine culoarea peiselor
-		public synchronized int[][] copyPiesPoz(int piespoz[][]) {
-			int piespozTemp[][] = new int[8][8];
+		public synchronized int[][] copypiecePoz(int piecePoz[][]) {
+			int piecePozTemp[][] = new int[rows][columns];
 			for (int i = 0; i < rows; i++)
-				System.arraycopy(piespoz[i], 0, piespozTemp[i], 0, 8);
-			return piespozTemp;
+				System.arraycopy(piecePoz[i], 0, piecePozTemp[i], 0, columns);
+			return piecePozTemp;
 		}
 
 		public boolean checkLegalMove(Point punct, Player player) {
@@ -201,61 +239,60 @@ public class ChessServer {
 			return currentPlayer.culoare == matrix[punct.x][punct.y].charAt(0);
 		}
 
-		public synchronized void nuSah(int i, int j) throws IOException {
+		public synchronized void noCheck(int i, int j) throws IOException {
 			selected = 0;
 			currentPlayer.output.writeObject("LEGAL MOVE");
 			currentPlayer.output.writeObject(new Point(i, j));
-			currentPlayer.output.writeObject(new Point(piesaselectatax, piesaselectatay));
+			currentPlayer.output.writeObject(new Point(selectedX, selectedY));
 			setRand();
 			currentPlayer.output.writeObject("OPPONENT MOVED");
 			currentPlayer.output.writeObject(new Point(i, j));
-			currentPlayer.output.writeObject(new Point(piesaselectatax, piesaselectatay));
+			currentPlayer.output.writeObject(new Point(selectedX, selectedY));
 		}
 
-		public boolean checkSah(String[][] matrixTemp, int[][] piespozTemp) {
-			int pozitierege = 0;
-			if (currentPlayer.rand == 1)
-				pozitierege = cauta("wrege", matrixTemp);
+		public boolean check(String[][] matrixTemp, int[][] piecePozTemp, int rand) {
+			int kingPos = 0;
+			if (rand == 1)
+				kingPos = search("wrege", matrixTemp);
 			else
-				pozitierege = cauta("brege", matrixTemp);
-			check1 = mutariPosibile(currentPlayer.rand * (-1), matrixTemp, piespozTemp);
-			if (check1[pozitierege / 10][pozitierege % 10] == 1)
+				kingPos = search("brege", matrixTemp);
+			check1 = mutariPosibile(currentPlayer.rand * (-1), matrixTemp, piecePozTemp);
+			if (check1[kingPos / 10][kingPos % 10] == 1)
 				return true;
 			return false;
 		}
 
 		public synchronized void muta(int placeToMoveX, int placeToMoveY, int moves[][]) throws IOException {
 			String matrixTemp[][];
-			int piespozTemp[][];
+			int piecePozTemp[][];
 			// a mutat pe o noua casuta
-			if ((placeToMoveX != piesaselectatax || placeToMoveY != piesaselectatay)) {
+			if ((placeToMoveX != selectedX || placeToMoveY != selectedY)) {
 				if (moves[placeToMoveX][placeToMoveY] == 1) { // legal move
 					logger.logMessage(AbstractLogger.INFO, "legalmove");
 					logger.logMessage(AbstractLogger.INFO, "");
-					afisareTabla(matrix);
+					// showTable(matrix);
 					logger.logMessage(AbstractLogger.INFO, "");
 					matrixTemp = copyMatrix(matrix);
-					piespozTemp = copyPiesPoz(piespoz);
-					matrixTemp[placeToMoveX][placeToMoveY] = matrixTemp[piesaselectatax][piesaselectatay];
-					matrixTemp[piesaselectatax][piesaselectatay] = "0";
-					piespozTemp[placeToMoveX][placeToMoveY] = piespozTemp[piesaselectatax][piesaselectatay];
-					piespozTemp[piesaselectatax][piesaselectatay] = 0;
-					afisareTabla(matrixTemp);
-					afisareTabla(matrix);
+					piecePozTemp = copypiecePoz(piecePoz);
+					matrixTemp[placeToMoveX][placeToMoveY] = matrixTemp[selectedX][selectedY];
+					matrixTemp[selectedX][selectedY] = "0";
+					piecePozTemp[placeToMoveX][placeToMoveY] = piecePozTemp[selectedX][selectedY];
+					piecePozTemp[selectedX][selectedY] = 0;
+					// showTable(matrixTemp);
+					// showTable(matrix);
 					logger.logMessage(AbstractLogger.INFO, "");
-					if (checkSah(matrixTemp, piespozTemp) == true) {
+					if (check(matrixTemp, piecePozTemp, currentPlayer.rand) == true) {
 						logger.logMessage(AbstractLogger.INFO, "SAH");
-						sah(placeToMoveX, placeToMoveY, matrixTemp[placeToMoveX][placeToMoveY],
-								piespozTemp[placeToMoveX][placeToMoveY]);
+						check();
 					} else {
 						logger.logMessage(AbstractLogger.INFO, "NUSAH");
 						matrix = copyMatrix(matrixTemp);
-						piespoz = copyPiesPoz(piespozTemp);
-						nuSah(placeToMoveX, placeToMoveY);
+						piecePoz = copypiecePoz(piecePozTemp);
+						noCheck(placeToMoveX, placeToMoveY);
 					}
 				}
 				// a deselectat casuta
-			} else if (placeToMoveY == piesaselectatax || placeToMoveY == piesaselectatay) {
+			} else if (placeToMoveY == selectedX || placeToMoveY == selectedY) {
 				selected = 0;
 				currentPlayer.output.writeObject("DESELECT");
 			} else {
@@ -267,24 +304,16 @@ public class ChessServer {
 			if (selected == 0) {
 				if (checkLegalSelect(new Point(i, j), currentPlayer) == false)
 					return;
-				piesaselectatax = i;
-				piesaselectatay = j;
+				selectedX = i;
+				selectedY = j;
 				selected = 1;
 				currentPlayer.output.writeObject("SELECTING");
 				currentPlayer.output.writeObject(new Point(i, j));
 				int[][] matrice = moves(currentPlayer.rand, matrix[i][j], i, j);
-				// afisareTabla(matrice);
 				currentPlayer.output.writeObject(matrice);
-				// check1 = mutariPosibile(currentPlayer.rand * (-1), matrix,
-				// piespoz);
-				if (verificaSahMat(currentPlayer.rand) == 1)
-					currentPlayer.output
-							.writeObject("MESSAGE SAH MAT ,Player " + currentPlayer.opponent.nume + "a castigat");
+
 			} else {
-				// afisareMatrix();
-				// logger.println();
-				int[][] matrice = moves(currentPlayer.rand, matrix[piesaselectatax][piesaselectatay], piesaselectatax,
-						piesaselectatay);
+				int[][] matrice = moves(currentPlayer.rand, matrix[selectedX][selectedY], selectedX, selectedY);
 				muta(i, j, matrice);
 			}
 		}
@@ -298,21 +327,35 @@ public class ChessServer {
 			public ObjectOutputStream output;
 			public Player opponent;
 
-			public Player(Socket socket, int rand) {
+			public Player(Socket socket, int rand) throws ClassNotFoundException, SQLException, IOException {
 				this.socket = socket;
 				this.culoare = (rand == 1 ? 'w' : 'b');
 				this.rand = rand;
-				try {
-					output = new ObjectOutputStream(socket.getOutputStream());
-					input = new ObjectInputStream(socket.getInputStream());
-				} catch (IOException e) {
-					logger.logMessage(AbstractLogger.INFO, "Player died: ");
-					logger.print(e.getMessage());
-				}
+				output = new ObjectOutputStream(socket.getOutputStream());
+				input = new ObjectInputStream(socket.getInputStream());
 			}
 
 			public void setOpponent(Player player) {
 				opponent = player;
+			}
+
+			public int waitConnection() throws ClassNotFoundException, SQLException {
+				try {
+					String command = (String) input.readObject();
+					logger.logMessage(AbstractLogger.INFO, "salam" + command);
+					String name = command.split(" ")[1];
+					String pas = command.split(" ")[2];
+					if (jdbc.findUser(name, pas) == true) {
+						output.writeObject("CONNECTED");
+						return 1;
+					} else {
+						output.writeObject("NOTCONNECTED");
+					}
+				} catch (IOException e) {
+					logger.logMessage(AbstractLogger.INFO, "Player died: ");
+					logger.print(e.getMessage());
+				}
+				return 0;
 			}
 
 			public void run() {
@@ -340,18 +383,21 @@ public class ChessServer {
 						} else if (command.startsWith("NUME")) {
 							logger.logMessage(AbstractLogger.INFO, command.substring(5));
 							this.nume = command.substring(5);
+						} else if (command.startsWith("DISCONNECTED")) {
+							// currentPlayer.output.writeObject(command);
+							this.opponent.output.writeObject(command);
 						}
 					}
 				} catch (IOException | ClassNotFoundException e) {
 					logger.logMessage(AbstractLogger.ERROR, "Player died: " + e);
 				} catch (Exception e) {
-					logger.logMessage(AbstractLogger.ERROR, "eroare");
 					logger.logMessage(AbstractLogger.ERROR, e.getMessage());
 				} finally {
 					try {
 						socket.close();
 						opponent.socket.close();
 					} catch (IOException e) {
+						logger.logMessage(AbstractLogger.ERROR, e.getMessage());
 					}
 				}
 			}

@@ -16,9 +16,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
-
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -36,7 +36,7 @@ import javax.swing.JTextField;
 public class ChessClient {
 	private static int PORT = 5002;
 	private ClientThread client;
-	private JDBCconnection jdbc;
+	// private JDBCconnection jdbc;
 	private Socket socket;
 	private ObjectInputStream in;
 	private ObjectOutputStream out;
@@ -54,7 +54,6 @@ public class ChessClient {
 	public JTextArea ta;
 	public JFrame checkerBoard;
 	public CardLayout cardLayout;
-	// public JFrame loginBoard;
 	public SpecialButton label[][];
 	public JPanel loginPanel;
 	public JButton login;
@@ -79,7 +78,7 @@ public class ChessClient {
 		this.serverAddress = serverAddress;
 	}
 
-	public void reseteazaCulori() {
+	public void resetColors() {
 		for (int i = 0; i < rows; i++)
 			for (int j = 0; j < columns; j++)
 				if ((i + j) % 2 == 0)
@@ -121,15 +120,15 @@ public class ChessClient {
 		eMenuItem3.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
-				checkerBoard.dispose();
 				try {
 					out.writeObject("RESET");
 					// display();
 				} catch (IOException e) {
-					e.printStackTrace();
+					// e.printStackTrace();
 				} catch (Exception e) {
-					e.printStackTrace();
+					// e.printStackTrace();
 				}
+				checkerBoard.dispose();
 			}
 		});
 
@@ -164,7 +163,7 @@ public class ChessClient {
 					try {
 						out.writeObject("CHAT " + outcome);
 					} catch (IOException e1) {
-						e1.printStackTrace();
+						// e1.printStackTrace();
 					}
 					tf.setText("");
 					ta.append("Eu: " + outcome);
@@ -194,36 +193,25 @@ public class ChessClient {
 		gridPane.setLayout(new GridLayout(rows, columns));
 		panel.add(gridPane, BorderLayout.WEST);
 		panel.add(chatPane, BorderLayout.EAST);
-		labelRand = new JLabel("");
+		labelRand = new JLabel("Asteptati un oponent");
 		panel.add(labelRand, "South");
 		panelMatrix = new JPanel[rows][columns];
 	}
 
 	public void createConnection() throws UnknownHostException, IOException {
-		socket = new Socket(serverAddress, PORT);
-		out = new ObjectOutputStream(socket.getOutputStream());
-		in = new ObjectInputStream(socket.getInputStream());
+		try {
+			socket = new Socket(serverAddress, PORT);
+			out = new ObjectOutputStream(socket.getOutputStream());
+			in = new ObjectInputStream(socket.getInputStream());
+		} catch (java.net.ConnectException exc) {
+			JOptionPane.showMessageDialog(checkerBoard, "Problema conexiune server", "SERVER PICAT",
+					JOptionPane.PLAIN_MESSAGE);
+		}
 	}
 
-	public void display() throws Exception {
-		int i = 0, j = 0;
+	public void addButtons() {
+		int i, j;
 		Color temp;
-		checkerBoard.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent e) {
-				try {
-					if (socket != null)
-						socket.close();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-				e.getWindow().dispose();
-			}
-		});
-
-		createConnection();
-		createPanels();
-		createMenuBar();
 		for (i = 0; i < rows; i++) {
 			if (i % 2 == 0) {
 				temp = col1;
@@ -304,15 +292,35 @@ public class ChessClient {
 				panelMatrix[i][j].add(label[i][j]);
 			}
 		}
-		reseteazaCulori();
-
 		for (i = 0; i < rows; i++)
 			for (j = 0; j < columns; j++)
 				addAction(label[i][j]);
+	}
+
+	public void display() throws Exception {
+		checkerBoard.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				try {
+					out.writeObject("DISCONNECTED OPPONENT DISCONNECTED");
+					if (socket != null)
+						socket.close();
+				} catch (IOException e1) {
+					 e1.printStackTrace();
+				}
+				e.getWindow().dispose();
+			}
+		});
+
+		createPanels();
+		createMenuBar();
+		addButtons();
+		resetColors();
+
 		// play();
 	}
 
-	public void selecteaza(int i, int j, int[][] matrice) {
+	public void select(int i, int j, int[][] matrice) {
 		label[i][j].setBackground(Color.DARK_GRAY);
 		for (int ii = 0; ii < rows; ii++)
 			for (int jj = 0; jj < columns; jj++)
@@ -336,7 +344,7 @@ public class ChessClient {
 			try {
 				play();
 			} catch (Exception e) {
-				e.printStackTrace();
+				 e.printStackTrace();
 			}
 		}
 
@@ -344,7 +352,7 @@ public class ChessClient {
 			String response;
 			try {
 				while (true) {
-					// trimitem numele
+					// trimitem si citim numele
 					out.writeObject("NUME " + client.name);
 					response = (String) in.readObject();
 					System.out.println("respones= " + response);
@@ -353,7 +361,7 @@ public class ChessClient {
 						Point punct = (Point) in.readObject();
 						Point punctMutat = (Point) in.readObject();
 						muta(punct.x, punct.y, punctMutat.x, punctMutat.y);
-						reseteazaCulori();
+						resetColors();
 					} else if (response.startsWith("OPPONENT MOVED")) {
 
 						Point punct = (Point) in.readObject();
@@ -362,7 +370,7 @@ public class ChessClient {
 					} else if (response.startsWith("SELECTING")) {
 						Point punct = (Point) in.readObject();
 						int[][] matrice = (int[][]) in.readObject();
-						selecteaza(punct.x, punct.y, matrice);
+						select(punct.x, punct.y, matrice);
 						System.out.println("response= " + response);
 						System.out.println(punct + "\n");
 						for (int i = 0; i < rows; i++) {
@@ -372,20 +380,40 @@ public class ChessClient {
 						}
 					} else if (response.startsWith("MESSAGE")) {
 						labelRand.setText(response.substring(8));
-					} else if (response.startsWith("SAH")) {
+					}
+					else if(response.startsWith("SAHMAT")) {
+							JOptionPane.showMessageDialog(checkerBoard, response, "SAH-MAT",
+									JOptionPane.PLAIN_MESSAGE);
+							checkerBoard.dispose();
+						}
+					 else if (response.startsWith("SAH")) {
 						labelRand.setText("Sunteti in sah, nu puteti muta in aceasta casuta");
 						JOptionPane.showMessageDialog(checkerBoard, "Sunteti in sah :D", "Sah",
 								JOptionPane.PLAIN_MESSAGE);
-						reseteazaCulori();
+						resetColors();
 					} else if (response.startsWith("DESELECT")) {
-						reseteazaCulori();
+						resetColors();
 					} else if (response.startsWith("CHAT")) {
 						ta.append(response.substring(5));
 						ta.append("\n");
+					} else if (response.startsWith("DISCONNECTED")) {
+						JOptionPane.showMessageDialog(checkerBoard, "OPPONENT DECONECTAT", "OPPONENT DECONECTAT",
+								JOptionPane.PLAIN_MESSAGE);
+						labelRand.setText(response.substring(13));
+						checkerBoard.dispose();
+					} else if (response.startsWith("PICAT")) {
+						JOptionPane.showMessageDialog(checkerBoard, "SERVER PICAT", "SERVER PICAT",
+								JOptionPane.PLAIN_MESSAGE);
+						labelRand.setText(response.substring(5));
+						checkerBoard.dispose();
 					}
 				}
+			} catch (SocketException exc) {
+				JOptionPane.showMessageDialog(checkerBoard, "SERVER PICAT", "SERVER PICAT", JOptionPane.PLAIN_MESSAGE);
+				checkerBoard.dispose();
+			} catch (Exception e) {
+				 e.printStackTrace();
 			} finally {
-				out.writeObject("QUIT");
 				socket.close();
 			}
 		}
@@ -403,6 +431,8 @@ public class ChessClient {
 								out.writeObject("MOVE");
 								out.writeObject(new Point(l, ll));
 							} catch (IOException e1) {
+								JOptionPane.showMessageDialog(checkerBoard, "SERVER PICAT", "SERVER PICAT", JOptionPane.PLAIN_MESSAGE);
+								checkerBoard.dispose(); 
 								e1.printStackTrace();
 							}
 						}
@@ -430,9 +460,8 @@ public class ChessClient {
 		}
 	}
 
-	public void displayLoginBoard() {
-		jdbc = new JDBCconnection();
-		jdbc.createConnection();
+	public void displayLoginBoard() throws UnknownHostException, IOException {
+
 		cardLayout = new CardLayout();
 		checkerBoard = new JFrame();
 		checkerBoard.setResizable(false);
@@ -459,20 +488,25 @@ public class ChessClient {
 		loginPanel.add(login);
 		cardPanel.add(loginPanel, "1");
 		cardPanel.add(panel, "2");
+		createConnection();
 		login.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					if (jdbc.findUser(username.getText(),String.valueOf(password.getPassword()))) {
-						try {
-							display();
-							cardLayout.show(cardPanel, "2");
-							client = new ClientThread(username.getText());
-							client.start();
-						} catch (Exception e1) {
-							e1.printStackTrace();
-						}
+					out.writeObject("CONNECT " + username.getText() + " " + String.valueOf(password.getPassword()));
+					String response = (String) in.readObject();
+					System.out.println("raspuns conectare=" + response);
+					if (response.equals("CONNECTED")) {
+						display();
+						cardLayout.show(cardPanel, "2");
+						client = new ClientThread(username.getText());
+						client.start();
+					} else {
+						JOptionPane.showMessageDialog(checkerBoard, "DATE GRESITE", "Eroare conexiune",
+								JOptionPane.PLAIN_MESSAGE);
 					}
 				} catch (SQLException e1) {
+					e1.printStackTrace();
+				} catch (Exception e1) {
 					e1.printStackTrace();
 				}
 			}

@@ -15,7 +15,7 @@ abstract class AbstractLogger {
 
 	public AbstractLogger() throws FileNotFoundException {
 		if (logger == null)
-			logger = new PrintWriter(new FileOutputStream(new File("logger.txt")), true);
+			logger = new PrintWriter(new FileOutputStream(new File("logger.txt"),true));
 	}
 
 	public void setNextLogger(AbstractLogger nextLogger) {
@@ -45,7 +45,7 @@ class InfoLogger extends AbstractLogger {
 
 	@Override
 	protected void print(String message) {
-		logger.println("Standard  info::Logger: " + message);
+		logger.println("Standard  ::Logger: " + message);
 	}
 }
 
@@ -57,7 +57,7 @@ class ErrorLogger extends AbstractLogger {
 
 	@Override
 	protected void print(String message) {
-		logger.println("Error Console::Logger: " + message);
+		logger.println("Error ::Logger: " + message);
 	}
 }
 
