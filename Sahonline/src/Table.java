@@ -4,6 +4,8 @@ public class Table {
     private String [][] matrix;
     public static final int rows = 8;
     public static final int columns = 8;
+
+
     public AbstractLogger logger;
 
     public Table() throws FileNotFoundException {
@@ -75,6 +77,14 @@ public class Table {
             System.arraycopy(matrix[i], 0, matrixTemp[i], 0, columns);
         // showTable(matrixTemp);
         return matrixTemp;
+    }
+
+    public String[][] getMatrix() {
+        return matrix;
+    }
+
+    public void setMatrix(String[][] matrix) {
+        this.matrix = matrix;
     }
 
 }

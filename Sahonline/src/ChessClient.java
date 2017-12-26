@@ -39,27 +39,27 @@ public class ChessClient {
 	private Socket socket;
 	private ObjectInputStream in;
 	private ObjectOutputStream out;
-	public JLabel labelRand;
-	public String serverAddress;
-	public static final Color col1 = new Color(130, 120, 82);
-	public static final int rows = 8;
-	public static final int columns = 8;
-	public static final Color col2 = Color.white;
-	public final int numberOfColums = 20; // for textfield
-	public JPanel panelMatrix[][], gridPane, chatPane, sendTextPane;
-	public Container panel, cardPanel;
-	public JLabel labelChat;
-	public JTextField tf;
-	public JTextArea ta;
-	public JFrame checkerBoard;
-	public CardLayout cardLayout;
-	public SpecialButton label[][];
-	public JPanel loginPanel;
-	public JButton login;
-	public JLabel userLabel;
-	public JLabel passwordLabel;
-	public JTextField username;
-	public JPasswordField password;
+	private JLabel labelRand;
+    private String serverAddress;
+    private static final Color col1 = new Color(130, 120, 82);
+    private static final int rows = 8;
+    private static final int columns = 8;
+    private static final Color col2 = Color.white;
+    private final int numberOfColums = 20; // for textfield
+    private JPanel panelMatrix[][], gridPane, chatPane, sendTextPane;
+    private Container panel, cardPanel;
+    private JLabel labelChat;
+    private JTextField tf;
+    private JTextArea ta;
+    private JFrame checkerBoard;
+    private CardLayout cardLayout;
+    private SpecialButton label[][];
+	private JPanel loginPanel;
+    private JButton login;
+    private JLabel userLabel;
+    private JLabel passwordLabel;
+    private JTextField username;
+    private JPasswordField password;
 
 	public ChessClient(String serverAddress) {
 		this.serverAddress = serverAddress;
@@ -315,7 +315,7 @@ public class ChessClient {
 					label[ii][jj].setBackground(Color.LIGHT_GRAY);
 	}
 
-	public void muta(int i, int j, int ii, int jj) {
+	public void move(int i, int j, int ii, int jj) {
 		label[i][j].setIcon(label[ii][jj].getIcon());
 		label[ii][jj].setIcon(null);
 	}
@@ -347,13 +347,13 @@ public class ChessClient {
 
 						Point punct = (Point) in.readObject();
 						Point punctMutat = (Point) in.readObject();
-						muta(punct.x, punct.y, punctMutat.x, punctMutat.y);
+                        move(punct.x, punct.y, punctMutat.x, punctMutat.y);
 						resetColors();
 					} else if (response.startsWith("OPPONENT MOVED")) {
 
 						Point punct = (Point) in.readObject();
 						Point punctMutat = (Point) in.readObject();
-						muta(punct.x, punct.y, punctMutat.x, punctMutat.y);
+                        move(punct.x, punct.y, punctMutat.x, punctMutat.y);
 					} else if (response.startsWith("SELECTING")) {
 						Point punct = (Point) in.readObject();
 						int[][] matrice = (int[][]) in.readObject();

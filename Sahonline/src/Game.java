@@ -12,7 +12,8 @@ class Game {
     public int check1[][] = new int[rows][columns];
     public int legalMoves[][];
     public Player currentPlayer;
-    public String matrix[][];
+    //public String matrix[][];
+    public Table table;
     public int selectedX, selectedY;
     public AbstractLogger logger;
 
@@ -29,42 +30,9 @@ class Game {
             piecePoz[0][i] = piecePoz[1][i] = 1;
             piecePoz[6][i] = piecePoz[7][i] = -1;
         }
-        matrix = new String[][] { { "wtura", "wcal", "wnebun", "wrege", "wregina", "wnebun", "wcal", "wtura" },
-                { "wpion", "wpion", "wpion", "wpion", "wpion", "wpion", "wpion", "wpion" },
-                { "0", "0", "0", "0", "0", "0", "0", "0" },
-                { "0", "0", "0", "0", "0", "0", "0", "0" },
-                { "0", "0", "0", "0", "0", "0", "0", "0" },
-                { "0", "0", "0", "0", "0", "0", "0", "0" },
-                { "bpion", "bpion", "bpion", "bpion", "bpion", "bpion", "bpion", "bpion" },
-                { "btura", "bcal", "bnebun", "brege", "bregina", "bnebun", "bcal", "btura" } };
+        table = new Table();
     }
 
-    public int search(String s, String matrix[][]) {
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < columns; j++) {
-                if (matrix[i][j].equals(s))
-                    return i * 10 + j;
-            }
-        return 0;
-    }
-
-    public int[][] posibleMoves(int rand, String[][] matrice, int piecePoz[][]) {
-        int i, j, ii, jj;
-        int table[][] = new int[rows][columns];
-        int b[][] = new int[rows][columns];
-        for (i = 0; i < rows; i++) {
-            for (j = 0; j < columns; j++) {
-                if (piecePoz[i][j] == rand) {
-                    b = Management.nextmove(matrice[i][j], i, j, rand, piecePoz);
-
-                    for (ii = 0; ii < rows; ii++)
-                        for (jj = 0; jj < columns; jj++)
-                            table[ii][jj] = table[ii][jj] | b[ii][jj];
-                }
-            }
-        }
-        return table;
-    }
 
     public int[][] moves(int rand, String piesa, int x, int y) {
         int b[][] = new int[rows][columns];
@@ -72,22 +40,13 @@ class Game {
         return b;
     }
 
-    public void showTable(String[][] matrix) {
-        int r, c;
-        for (r = 0; r < rows; r++) {
-            for (c = 0; c < columns; c++) {
-                logger.print(matrix[r][c] + " ");
-            }
-            logger.logMessage(AbstractLogger.INFO, "");
-        }
-    }
 
     public void setRand() throws IOException {
         currentPlayer = currentPlayer.opponent;
         currentPlayer.output.writeObject("MESSAGE Este randul lui " + currentPlayer.nume);
         currentPlayer.opponent.output.writeObject("MESSAGE Este randul lui " + currentPlayer.nume);
 
-        if (check(matrix, piecePoz, currentPlayer.rand) && verifyCheckMate(currentPlayer.rand) == 1) {
+        if (check(table, piecePoz, currentPlayer.rand) && verifyCheckMate(currentPlayer.rand) == 1) {
             currentPlayer.output
                     .writeObject("SAHMAT ,Jucatorul " + currentPlayer.opponent.nume + " a castigat");
             currentPlayer.opponent.output
@@ -95,17 +54,8 @@ class Game {
         }
     }
 
-    public int getkingPos(int rand, String matrix[][]) {
-        int i, j, poz = 0;
-        char culoare = (rand == 1) ? 'w' : 'b';
-        for (i = 0; i < rows; i++)
-            for (j = 0; j < columns; j++)
-                if (matrix[i][j].substring(1).equals("rege") && matrix[i][j].charAt(0) == culoare)
-                    poz = i * 10 + j;
-        return poz;
-    }
 
-    public int verifyCheckMate(int rand) {
+    public int verifyCheckMate(int rand) throws FileNotFoundException {
         int i, j, ii = 0, jj = 0, kingPos;
         String aux;
         int aux2;
@@ -113,19 +63,19 @@ class Game {
         String tempPoz[][] = new String[rows][columns];
         int tempPiecePoz[][] = new int[rows][columns];
         // int c[][] = new int[rows][columns];
-        kingPos = getkingPos(rand, matrix);
+        kingPos = table.getKingPos(rand);
         logger.logMessage(AbstractLogger.INFO, "kingPos=" + kingPos);
         for (ii = 0; ii < rows; ii++)
             for (jj = 0; jj < columns; jj++) {
                 if (piecePoz[ii][jj] == rand) {
-                    a = moves(rand, matrix[ii][jj], ii, jj);
+                    a = moves(rand, table.getMatrix()[ii][jj], ii, jj);
                     for (i = 0; i < rows; i++)
                         for (j = 0; j < columns; j++) {
                             if (a[i][j] == 0)
                                 continue;
                             for (int l = 0; l < rows; l++)
                                 for (int ll = 0; ll < columns; ll++) {
-                                    tempPoz[l][ll] = matrix[l][ll];
+                                    tempPoz[l][ll] = table.getMatrix()[l][ll];
                                     tempPiecePoz[l][ll] = piecePoz[l][ll];
                                 }
                             aux = tempPoz[ii][jj];
@@ -136,7 +86,7 @@ class Game {
                             tempPiecePoz[ii][jj] = tempPiecePoz[i][j];
                             tempPiecePoz[i][j] = aux2;
 
-                            if (check(tempPoz, tempPiecePoz, rand ) == false)
+                            if (!check(new Table(tempPoz), tempPiecePoz, rand ))
                                 return 0;
 
                         }
@@ -158,16 +108,6 @@ class Game {
         }
     }
 
-    // copiem masa cu numele pieselor
-    public String[][] copyMatrix(String matrix[][]) {
-        String matrixTemp[][] = new String[rows][columns];
-        for (int i = 0; i < rows; i++)
-            System.arraycopy(matrix[i], 0, matrixTemp[i], 0, columns);
-        logger.logMessage(AbstractLogger.INFO, "copyMatrix");
-        // showTable(matrixTemp);
-        return matrixTemp;
-    }
-
     // copiem masa care retine culoarea peiselor
     public int[][] copypiecePoz(int piecePoz[][]) {
         int piecePozTemp[][] = new int[rows][columns];
@@ -181,7 +121,7 @@ class Game {
     }
 
     public boolean checkLegalSelect(Point punct, Player player) {
-        return currentPlayer.culoare == matrix[punct.x][punct.y].charAt(0);
+        return currentPlayer.culoare == table.getMatrix()[punct.x][punct.y].charAt(0);
     }
 
     public synchronized void noCheck(int i, int j) throws IOException {
@@ -195,13 +135,13 @@ class Game {
         currentPlayer.output.writeObject(new Point(selectedX, selectedY));
     }
 
-    public boolean check(String[][] matrixTemp, int[][] piecePozTemp, int rand) {
+    public boolean check(Table table, int[][] piecePozTemp, int rand) {
         int kingPos = 0;
         if (rand == 1)
-            kingPos = search("wrege", matrixTemp);
+            kingPos = table.search("wrege");
         else
-            kingPos = search("brege", matrixTemp);
-        check1 = posibleMoves(currentPlayer.rand * (-1), matrixTemp, piecePozTemp);
+            kingPos = table.search("brege");
+        check1 = table.posibleMoves(currentPlayer.rand * (-1), piecePozTemp);
         if (check1[kingPos / 10][kingPos % 10] == 1)
             return true;
         return false;
@@ -217,7 +157,7 @@ class Game {
                 logger.logMessage(AbstractLogger.INFO, "");
                 // showTable(matrix);
                 logger.logMessage(AbstractLogger.INFO, "");
-                matrixTemp = copyMatrix(matrix);
+                matrixTemp = table.copyMatrix(table.getMatrix());
                 piecePozTemp = copypiecePoz(piecePoz);
                 matrixTemp[placeToMoveX][placeToMoveY] = matrixTemp[selectedX][selectedY];
                 matrixTemp[selectedX][selectedY] = "0";
@@ -226,12 +166,12 @@ class Game {
                 // showTable(matrixTemp);
                 // showTable(matrix);
                 logger.logMessage(AbstractLogger.INFO, "");
-                if (check(matrixTemp, piecePozTemp, currentPlayer.rand) == true) {
+                if (check(new Table(matrixTemp), piecePozTemp, currentPlayer.rand) == true) {
                     logger.logMessage(AbstractLogger.INFO, "SAH");
                     check();
                 } else {
                     logger.logMessage(AbstractLogger.INFO, "NUSAH");
-                    matrix = copyMatrix(matrixTemp);
+                    table = new Table(table.copyMatrix(matrixTemp));
                     piecePoz = copypiecePoz(piecePozTemp);
                     noCheck(placeToMoveX, placeToMoveY);
                 }
@@ -254,11 +194,11 @@ class Game {
             selected = 1;
             currentPlayer.output.writeObject("SELECTING");
             currentPlayer.output.writeObject(new Point(i, j));
-            int[][] matrice = moves(currentPlayer.rand, matrix[i][j], i, j);
+            int[][] matrice = moves(currentPlayer.rand, table.getMatrix()[i][j], i, j);
             currentPlayer.output.writeObject(matrice);
 
         } else {
-            int[][] matrice = moves(currentPlayer.rand, matrix[selectedX][selectedY], selectedX, selectedY);
+            int[][] matrice = moves(currentPlayer.rand, table.getMatrix()[selectedX][selectedY], selectedX, selectedY);
             move(i, j, matrice);
         }
     }
