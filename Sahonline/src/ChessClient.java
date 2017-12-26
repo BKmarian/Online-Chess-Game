@@ -36,7 +36,6 @@ import javax.swing.JTextField;
 public class ChessClient {
 	private static int PORT = 5002;
 	private ClientThread client;
-	// private JDBCconnection jdbc;
 	private Socket socket;
 	private ObjectInputStream in;
 	private ObjectOutputStream out;
@@ -61,18 +60,6 @@ public class ChessClient {
 	public JLabel passwordLabel;
 	public JTextField username;
 	public JPasswordField password;
-	public static final ImageIcon wpion = new ImageIcon("images/wpion.png");
-	public static final ImageIcon bpion = new ImageIcon("images/bpion.png");
-	public static final ImageIcon wtura = new ImageIcon("images/wtura.png");
-	public static final ImageIcon btura = new ImageIcon("images/btura.png");
-	public static final ImageIcon wcal = new ImageIcon("images/wcal.png");
-	public static final ImageIcon bcal = new ImageIcon("images/bcal.png");
-	public static final ImageIcon wnebun = new ImageIcon("images/wnebun.png");
-	public static final ImageIcon bnebun = new ImageIcon("images/bnebun.png");
-	public static final ImageIcon brege = new ImageIcon("images/brege.png");
-	public static final ImageIcon wrege = new ImageIcon("images/wrege.png");
-	public static final ImageIcon bregina = new ImageIcon("images/bregina.png");
-	public static final ImageIcon wregina = new ImageIcon("images/wregina.png");
 
 	public ChessClient(String serverAddress) {
 		this.serverAddress = serverAddress;
@@ -224,34 +211,34 @@ public class ChessClient {
 					label[i][j] = new SpecialButton(temp);
 				}
 				if (i == 1) {
-					label[i][j] = new SpecialButton(temp, wpion);
+					label[i][j] = new SpecialButton(temp, ImageFactory.getImageIcon("wpion"));
 				}
 				if (i == 6) {
-					label[i][j] = new SpecialButton(temp, bpion);
+					label[i][j] = new SpecialButton(temp, ImageFactory.getImageIcon("bpion"));
 				}
 				if (i == 7) {
 					switch (j) {
 					case 0:
 					case 7: {
-						label[i][j] = new SpecialButton(temp, btura);
+						label[i][j] = new SpecialButton(temp, ImageFactory.getImageIcon("btura"));
 						break;
 					}
 					case 1:
 					case 6: {
-						label[i][j] = new SpecialButton(temp, bcal);
+						label[i][j] = new SpecialButton(temp, ImageFactory.getImageIcon("bcal"));
 						break;
 					}
 					case 2:
 					case 5: {
-						label[i][j] = new SpecialButton(temp, bnebun);
+						label[i][j] = new SpecialButton(temp, ImageFactory.getImageIcon("bnebun"));
 						break;
 					}
 					case 3: {
-						label[i][j] = new SpecialButton(temp, brege);
+						label[i][j] = new SpecialButton(temp, ImageFactory.getImageIcon("brege"));
 						break;
 					}
 					case 4:
-						label[i][j] = new SpecialButton(temp, bregina);
+						label[i][j] = new SpecialButton(temp, ImageFactory.getImageIcon("bregina"));
 						break;
 					}
 				}
@@ -259,25 +246,25 @@ public class ChessClient {
 					switch (j) {
 					case 0:
 					case 7: {
-						label[i][j] = new SpecialButton(temp, wtura);
+						label[i][j] = new SpecialButton(temp, ImageFactory.getImageIcon("wtura"));
 						break;
 					}
 					case 1:
 					case 6: {
-						label[i][j] = new SpecialButton(temp, wcal);
+						label[i][j] = new SpecialButton(temp, ImageFactory.getImageIcon("wcal"));
 						break;
 					}
 					case 2:
 					case 5: {
-						label[i][j] = new SpecialButton(temp, wnebun);
+						label[i][j] = new SpecialButton(temp, ImageFactory.getImageIcon("wnebun"));
 						break;
 					}
 					case 3: {
-						label[i][j] = new SpecialButton(temp, wrege);
+						label[i][j] = new SpecialButton(temp, ImageFactory.getImageIcon("wrege"));
 						break;
 					}
 					case 4: {
-						label[i][j] = new SpecialButton(temp, wregina);
+						label[i][j] = new SpecialButton(temp, ImageFactory.getImageIcon("wregina"));
 						break;
 					}
 					}
@@ -440,25 +427,6 @@ public class ChessClient {
 		});
 	}
 
-	@SuppressWarnings("serial")
-	class SpecialButton extends JButton {
-		boolean opaque;
-		Color color;
-		ImageIcon image;
-
-		public SpecialButton(Color color, ImageIcon image) {
-			super();
-			super.setOpaque(true);
-			super.setBackground(color);
-			super.setIcon(image);
-		}
-
-		public SpecialButton(Color color) {
-			super();
-			super.setBackground(color);
-			super.setOpaque(true);
-		}
-	}
 
 	public void displayLoginBoard() throws UnknownHostException, IOException {
 

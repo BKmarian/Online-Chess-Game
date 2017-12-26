@@ -4,7 +4,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class JDBCconnection {
+//SINGLETON
+
+public enum JDBCconnection {
+	INSTANCE;
 	final static public String url = "jdbc:mysql://51.255.99.13:3306/proiect_mds";
 	final static public String username = "proiect_mds";
 	final static public String password = "parolamea";
