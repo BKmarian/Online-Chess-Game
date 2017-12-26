@@ -110,10 +110,8 @@ public class ChessClient {
 				try {
 					out.writeObject("RESET");
 					// display();
-				} catch (IOException e) {
-					// e.printStackTrace();
 				} catch (Exception e) {
-					// e.printStackTrace();
+					 e.printStackTrace();
 				}
 				checkerBoard.dispose();
 			}

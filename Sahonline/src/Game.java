@@ -5,17 +5,16 @@ import java.sql.SQLException;
 
 
 class Game {
-    public int selected = 0; // exista piesa selectata
-    public int piecePoz[][]; // 1 pentru piesa alba -1 pt piesa neagra
-    public static final int rows = 8;
-    public static final int columns = 8;
-    public int check1[][] = new int[rows][columns];
-    public int legalMoves[][];
-    public Player currentPlayer;
-    //public String matrix[][];
-    public Table table;
-    public int selectedX, selectedY;
-    public AbstractLogger logger;
+    private int selected = 0; // exista piesa selectata
+    private int piecePoz[][]; // 1 pentru piesa alba -1 pt piesa neagra
+    private static final int rows = 8;
+    private static final int columns = 8;
+    private int check1[][] = new int[rows][columns];
+    private int legalMoves[][];
+    private Player currentPlayer;
+    private Table table;
+    private int selectedX, selectedY;
+    private AbstractLogger logger;
 
     public Game() throws FileNotFoundException, UnsupportedEncodingException {
         logger = Logger.getChainOfLoggers();
@@ -274,8 +273,6 @@ class Game {
                 }
             } catch (IOException | ClassNotFoundException e) {
                 logger.logMessage(AbstractLogger.ERROR, "Player died: " + e);
-            } catch (Exception e) {
-                logger.logMessage(AbstractLogger.ERROR, e.getMessage());
             } finally {
                 try {
                     socket.close();
