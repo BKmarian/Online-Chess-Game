@@ -7,7 +7,7 @@ public class Management {
 	public static int[][] nextmove(String nume, int x, int y, int r,
 			int piespoz[][]) {
 		int i, j;
-		int mutari[][] = new int[8][8];
+		int mutari[][] = new int[Table.rows][Table.columns];
 		int xx, yy;
 		for (i = 0; i <= 7; i++)
 			for (j = 0; j <= 7; j++)

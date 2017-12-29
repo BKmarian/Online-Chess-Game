@@ -18,16 +18,14 @@ public class ChessClient {
     private String serverAddress;
 	private CustomJMenu menubar;
 	private GamePanel gamePanel;
-	public static final int rows = 8;
-	public static final int columns = 8;
 
 	public ChessClient(String serverAddress) {
 		this.serverAddress = serverAddress;
 	}
 
 	public void resetColors() {
-		for (int i = 0; i < rows; i++)
-			for (int j = 0; j < columns; j++)
+		for (int i = 0; i < Table.rows; i++)
+			for (int j = 0; j < Table.columns; j++)
 				if ((i + j) % 2 == 0)
 					gamePanel.getLabel()[i][j].setBackground(GamePanel.col1);
 				else
@@ -53,8 +51,8 @@ public class ChessClient {
 	public void addButtons() {
 		int i,j;
 		gamePanel.addButtons();
-		for (i = 0; i < rows; i++)
-			for (j = 0; j < columns; j++)
+		for (i = 0; i < Table.rows; i++)
+			for (j = 0; j < Table.columns; j++)
 				addAction(gamePanel.getLabel()[i][j]);
 	}
 
@@ -83,8 +81,8 @@ public class ChessClient {
 
 	public void select(int i, int j, int[][] matrice) {
 		gamePanel.getLabel()[i][j].setBackground(Color.DARK_GRAY);
-		for (int ii = 0; ii < rows; ii++)
-			for (int jj = 0; jj < columns; jj++)
+		for (int ii = 0; ii < Table.rows; ii++)
+			for (int jj = 0; jj < Table.columns; jj++)
 				if (matrice[ii][jj] == 1)
 					gamePanel.getLabel()[ii][jj].setBackground(Color.LIGHT_GRAY);
 	}
@@ -147,8 +145,8 @@ public class ChessClient {
 			select(punct.x, punct.y, matrice);
 			System.out.println("response= " + response);
 			System.out.println(punct + "\n");
-			for (int i = 0; i < rows; i++) {
-				for (int j = 0; j < columns; j++)
+			for (int i = 0; i < Table.rows; i++) {
+				for (int j = 0; j < Table.columns; j++)
 					System.out.print(matrice[i][j] + " ");
 				System.out.println();
 			}
@@ -187,8 +185,8 @@ public class ChessClient {
 			public void mousePressed(MouseEvent e) {
 				int l, ll;
 				// Cauta buton
-				for (l = 0; l < rows; l++)
-					for (ll = 0; ll < columns; ll++)
+				for (l = 0; l < Table.rows; l++)
+					for (ll = 0; ll < Table.columns; ll++)
 						if (e.getSource() == gamePanel.getLabel()[l][ll]) {
 							try {
 								out.writeObject("MOVE");

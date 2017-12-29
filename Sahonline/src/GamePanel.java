@@ -74,26 +74,26 @@ public class GamePanel extends JPanel {
         chatPane.add(new JScrollPane(ta), BorderLayout.NORTH);
         ta.setEditable(false);
 
-        label = new SpecialButton[ChessClient.rows][ChessClient.columns];
+        label = new SpecialButton[Table.rows][Table.columns];
         // panel.setSize(1200, 600);
-        gridPane.setLayout(new GridLayout(ChessClient.rows, ChessClient.columns));
+        gridPane.setLayout(new GridLayout(Table.rows, Table.columns));
         panel.add(gridPane, BorderLayout.WEST);
         panel.add(chatPane, BorderLayout.EAST);
         labelRand = new JLabel("Asteptati un oponent");
         panel.add(labelRand, "South");
-        panelMatrix = new JPanel[ChessClient.rows][ChessClient.columns];
+        panelMatrix = new JPanel[Table.rows][Table.columns];
     }
 
     public void addButtons() {
         int i, j;
         Color temp;
-        for (i = 0; i < ChessClient.rows; i++) {
+        for (i = 0; i < Table.rows; i++) {
             if (i % 2 == 0) {
                 temp = col1;
             } else {
                 temp = col2;
             }
-            for (j = 0; j < ChessClient.columns; j++) {
+            for (j = 0; j < Table.columns; j++) {
 
                 if (i != 0 && i != 1 && i != 6 && i != 7) {
                     label[i][j] = new SpecialButton(temp);
