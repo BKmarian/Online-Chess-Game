@@ -34,7 +34,7 @@ public class ChessServer {
 
 				player1.setOpponent(player2);
 				player2.setOpponent(player1);
-				game.currentPlayer = player1;
+				game.setCurrentPlayer(player1);
 				games.add(game);
 				player1.start();
 				player2.start();
@@ -43,8 +43,8 @@ public class ChessServer {
 			logger.logMessage(AbstractLogger.ERROR, e.getMessage());
 		} finally {
 			for (Game game : games) {
-				game.currentPlayer.output.writeObject("PICAT SERVERUL A PICAT");
-				game.currentPlayer.opponent.output.writeObject("PICAT SERVERUL A PICAT");
+				game.getCurrentPlayer().output.writeObject("PICAT SERVERUL A PICAT");
+				game.getCurrentPlayer().opponent.output.writeObject("PICAT SERVERUL A PICAT");
 			}
 			listener.close();
 			logger.close();

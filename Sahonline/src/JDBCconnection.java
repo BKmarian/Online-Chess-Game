@@ -56,7 +56,7 @@ public enum JDBCconnection {
 			found = false;
 		else
 			found = true;
-		
+
 		connection.close();
 		rs.close();
 		stmt.close();
