@@ -16,10 +16,10 @@ public class ChessClient {
 	private ObjectInputStream in;
 	private ObjectOutputStream out;
     private String serverAddress;
-    private static final int rows = 8;
-    private static final int columns = 8;
 	private CustomJMenu menubar;
 	private GamePanel gamePanel;
+	public static final int rows = 8;
+	public static final int columns = 8;
 
 	public ChessClient(String serverAddress) {
 		this.serverAddress = serverAddress;

@@ -8,8 +8,6 @@ import java.net.UnknownHostException;
 
 public class GamePanel extends JPanel {
     private JLabel labelRand;
-    private static final int rows = 8;
-    private static final int columns = 8;
     private final int numberOfColums = 20; // for textfield
     private JPanel panelMatrix[][], gridPane, chatPane, sendTextPane;
     private Container panel, cardPanel;
@@ -76,26 +74,26 @@ public class GamePanel extends JPanel {
         chatPane.add(new JScrollPane(ta), BorderLayout.NORTH);
         ta.setEditable(false);
 
-        label = new SpecialButton[rows][columns];
+        label = new SpecialButton[ChessClient.rows][ChessClient.columns];
         // panel.setSize(1200, 600);
-        gridPane.setLayout(new GridLayout(rows, columns));
+        gridPane.setLayout(new GridLayout(ChessClient.rows, ChessClient.columns));
         panel.add(gridPane, BorderLayout.WEST);
         panel.add(chatPane, BorderLayout.EAST);
         labelRand = new JLabel("Asteptati un oponent");
         panel.add(labelRand, "South");
-        panelMatrix = new JPanel[rows][columns];
+        panelMatrix = new JPanel[ChessClient.rows][ChessClient.columns];
     }
 
     public void addButtons() {
         int i, j;
         Color temp;
-        for (i = 0; i < rows; i++) {
+        for (i = 0; i < ChessClient.rows; i++) {
             if (i % 2 == 0) {
                 temp = col1;
             } else {
                 temp = col2;
             }
-            for (j = 0; j < columns; j++) {
+            for (j = 0; j < ChessClient.columns; j++) {
 
                 if (i != 0 && i != 1 && i != 6 && i != 7) {
                     label[i][j] = new SpecialButton(temp);
