@@ -76,52 +76,7 @@ public class ChessClient {
 
 	private void createMenuBar() {
 
-		JMenuBar menubar = new JMenuBar();
-
-		JMenu file = new JMenu("Menu");
-		file.setMnemonic(KeyEvent.VK_F);
-
-		JMenuItem eMenuItem = new JMenuItem("Exit");
-		eMenuItem.setMnemonic(KeyEvent.VK_E);
-		eMenuItem.setToolTipText("Exit application");
-		eMenuItem.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent event) {
-				System.exit(0);
-			}
-		});
-
-		JMenuItem eMenuItem2 = new JMenuItem("About");
-		eMenuItem2.setMnemonic(KeyEvent.VK_A);
-		eMenuItem2.setToolTipText("About");
-		eMenuItem2.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent event) {
-				JOptionPane.showMessageDialog(checkerBoard, "Joc facut de Sichitiu Marian");
-			}
-		});
-
-		JMenuItem eMenuItem3 = new JMenuItem("Reset");
-		eMenuItem3.setMnemonic(KeyEvent.VK_R);
-		eMenuItem3.setToolTipText("Reset");
-		eMenuItem3.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent event) {
-				try {
-					out.writeObject("RESET");
-					// display();
-				} catch (Exception e) {
-					 e.printStackTrace();
-				}
-				checkerBoard.dispose();
-			}
-		});
-
-		file.add(eMenuItem);
-		file.add(eMenuItem2);
-		file.add(eMenuItem3);
-		menubar.add(file);
-
+		CustomJMenu menubar = new CustomJMenu(checkerBoard,out);
 		checkerBoard.setJMenuBar(menubar);
 	}
 
@@ -341,57 +296,7 @@ public class ChessClient {
 					out.writeObject("NUME " + client.name);
 					response = (String) in.readObject();
 					System.out.println("respones= " + response);
-					if (response.startsWith("LEGAL MOVE")) {
-
-						Point punct = (Point) in.readObject();
-						Point punctMutat = (Point) in.readObject();
-                        move(punct.x, punct.y, punctMutat.x, punctMutat.y);
-						resetColors();
-					} else if (response.startsWith("OPPONENT MOVED")) {
-
-						Point punct = (Point) in.readObject();
-						Point punctMutat = (Point) in.readObject();
-                        move(punct.x, punct.y, punctMutat.x, punctMutat.y);
-					} else if (response.startsWith("SELECTING")) {
-						Point punct = (Point) in.readObject();
-						int[][] matrice = (int[][]) in.readObject();
-						select(punct.x, punct.y, matrice);
-						System.out.println("response= " + response);
-						System.out.println(punct + "\n");
-						for (int i = 0; i < rows; i++) {
-							for (int j = 0; j < columns; j++)
-								System.out.print(matrice[i][j] + " ");
-							System.out.println();
-						}
-					} else if (response.startsWith("MESSAGE")) {
-						labelRand.setText(response.substring(8));
-					}
-					else if(response.startsWith("SAHMAT")) {
-							JOptionPane.showMessageDialog(checkerBoard, response, "SAH-MAT",
-									JOptionPane.PLAIN_MESSAGE);
-							checkerBoard.dispose();
-						}
-					 else if (response.startsWith("SAH")) {
-						labelRand.setText("Sunteti in sah, nu puteti muta in aceasta casuta");
-						JOptionPane.showMessageDialog(checkerBoard, "Sunteti in sah :D", "Sah",
-								JOptionPane.PLAIN_MESSAGE);
-						resetColors();
-					} else if (response.startsWith("DESELECT")) {
-						resetColors();
-					} else if (response.startsWith("CHAT")) {
-						ta.append(response.substring(5));
-						ta.append("\n");
-					} else if (response.startsWith("DISCONNECTED")) {
-						JOptionPane.showMessageDialog(checkerBoard, "OPPONENT DECONECTAT", "OPPONENT DECONECTAT",
-								JOptionPane.PLAIN_MESSAGE);
-						labelRand.setText(response.substring(13));
-						checkerBoard.dispose();
-					} else if (response.startsWith("PICAT")) {
-						JOptionPane.showMessageDialog(checkerBoard, "SERVER PICAT", "SERVER PICAT",
-								JOptionPane.PLAIN_MESSAGE);
-						labelRand.setText(response.substring(5));
-						checkerBoard.dispose();
-					}
+					process(response);
 				}
 			} catch (SocketException exc) {
 				JOptionPane.showMessageDialog(checkerBoard, "SERVER PICAT", "SERVER PICAT", JOptionPane.PLAIN_MESSAGE);
@@ -403,7 +308,59 @@ public class ChessClient {
 			}
 		}
 	}
+	public void process(String response) throws IOException, ClassNotFoundException {
+		if (response.startsWith("LEGAL MOVE")) {
 
+			Point punct = (Point) in.readObject();
+			Point punctMutat = (Point) in.readObject();
+			move(punct.x, punct.y, punctMutat.x, punctMutat.y);
+			resetColors();
+		} else if (response.startsWith("OPPONENT MOVED")) {
+
+			Point punct = (Point) in.readObject();
+			Point punctMutat = (Point) in.readObject();
+			move(punct.x, punct.y, punctMutat.x, punctMutat.y);
+		} else if (response.startsWith("SELECTING")) {
+			Point punct = (Point) in.readObject();
+			int[][] matrice = (int[][]) in.readObject();
+			select(punct.x, punct.y, matrice);
+			System.out.println("response= " + response);
+			System.out.println(punct + "\n");
+			for (int i = 0; i < rows; i++) {
+				for (int j = 0; j < columns; j++)
+					System.out.print(matrice[i][j] + " ");
+				System.out.println();
+			}
+		} else if (response.startsWith("MESSAGE")) {
+			labelRand.setText(response.substring(8));
+		}
+		else if(response.startsWith("SAHMAT")) {
+			JOptionPane.showMessageDialog(checkerBoard, response, "SAH-MAT",
+					JOptionPane.PLAIN_MESSAGE);
+			checkerBoard.dispose();
+		}
+		else if (response.startsWith("SAH")) {
+			labelRand.setText("Sunteti in sah, nu puteti muta in aceasta casuta");
+			JOptionPane.showMessageDialog(checkerBoard, "Sunteti in sah :D", "Sah",
+					JOptionPane.PLAIN_MESSAGE);
+			resetColors();
+		} else if (response.startsWith("DESELECT")) {
+			resetColors();
+		} else if (response.startsWith("CHAT")) {
+			ta.append(response.substring(5));
+			ta.append("\n");
+		} else if (response.startsWith("DISCONNECTED")) {
+			JOptionPane.showMessageDialog(checkerBoard, "OPPONENT DECONECTAT", "OPPONENT DECONECTAT",
+					JOptionPane.PLAIN_MESSAGE);
+			labelRand.setText(response.substring(13));
+			checkerBoard.dispose();
+		} else if (response.startsWith("PICAT")) {
+			JOptionPane.showMessageDialog(checkerBoard, "SERVER PICAT", "SERVER PICAT",
+					JOptionPane.PLAIN_MESSAGE);
+			labelRand.setText(response.substring(5));
+			checkerBoard.dispose();
+		}
+	}
 	public void addAction(JButton button) {
 		button.addMouseListener(new MouseAdapter() {
 			public void mousePressed(MouseEvent e) {
